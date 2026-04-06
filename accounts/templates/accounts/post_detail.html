@@ -1,0 +1,265 @@
+{% extends 'accounts/base.html' %}
+{% load custom_filters %}
+
+{% block title %}Пост{% endblock %}
+
+{% block content %}
+<div class="feed-scroll">
+    <article class="post-card" id="post-{{ post.id }}">
+        <div class="post-header">
+            <div class="post-user-info">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <a href="{% url 'profile_view' post.user.username %}" class="post-user-link">@{{ post.user.username }}</a>
+                    {% if request.user.is_authenticated and request.user.id != post.user.id %}
+                    <a href="/messages/chat/{{ post.user.id }}/" title="Написать сообщение" style="text-decoration: none; font-size: 16px; opacity: 0.6;">💬</a>
+                    {% endif %}
+                </div>
+                {% if post.location %}
+                    <div class="post-location">📍 {{ post.location }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="post-meta">
+                <span class="post-time">{{ post.created_at|timesince }} назад</span>
+                <div class="dropdown">
+                    <button class="post-menu-btn" onclick="togglePostOptions('{{ post.id }}')">⋮</button>
+                    <div class="post-options" id="post-options-{{ post.id }}">
+                        {% if request.user == post.user %}
+                            <a href="{% url 'edit_post' post.id %}" class="menu-item">✏️ Редактировать</a>
+                            <button class="menu-item delete" onclick="deletePost('{{ post.id }}')">🗑️ Удалить</button>
+                        {% else %}
+                            <button class="menu-item" onclick="savePost('{{ post.id }}')">🔖 Сохранить</button>
+                            <button class="menu-item" onclick="copyLink('{{ post.id }}')">🔗 Копировать ссылку</button>
+                            <button class="menu-item" onclick="reportPost('{{ post.id }}')">🚩 Пожаловаться</button>
+                            <button class="menu-item" onclick="hidePost('{{ post.id }}')">👁️‍🗨️ Скрыть</button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if post.image %}
+        <div class="post-image-container">
+            <img src="{{ post.image.url }}" alt="Post image" class="post-main-img">
+        </div>
+        {% endif %}
+
+        <div class="post-content">
+            <p>{{ post.caption|format_post }}</p>
+        </div>
+    </article>
+</div>
+
+<style>
+    .post-card {
+        background: white;
+        margin-bottom: 25px;
+        border-radius: 20px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        overflow: hidden;
+    }
+
+    .post-header {
+        padding: 12px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .post-user-link {
+        font-weight: 700;
+        color: #6366f1;
+        text-decoration: none;
+    }
+
+    .post-location {
+        font-size: 11px;
+        color: #94a3b8;
+    }
+
+    .post-meta {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        position: relative;
+    }
+
+    .post-time {
+        font-size: 11px;
+        color: #94a3b8;
+    }
+
+    .post-menu-btn {
+        background: none;
+        border: none;
+        font-size: 20px;
+        color: #64748b;
+        cursor: pointer;
+        padding: 5px;
+    }
+
+    /* Всплывающее меню */
+    .post-options {
+        display: none;
+        position: absolute;
+        right: 0;
+        top: 30px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        z-index: 100;
+        min-width: 180px;
+        border: 1px solid #f1f5f9;
+        overflow: hidden;
+    }
+
+    .post-options.show {
+        display: block;
+    }
+
+    .menu-item {
+        display: block;
+        width: 100%;
+        padding: 12px 16px;
+        text-align: left;
+        background: none;
+        border: none;
+        font-size: 13px;
+        color: #334155;
+        cursor: pointer;
+        text-decoration: none;
+        transition: background 0.2s;
+    }
+
+    .menu-item:hover {
+        background: #f8fafc;
+    }
+
+    .menu-item.delete {
+        color: #ef4444;
+    }
+
+    .post-main-img {
+        width: 100%;
+        display: block;
+        max-height: 500px;
+        object-fit: cover;
+    }
+
+    .post-content {
+        padding: 15px 20px;
+    }
+</style>
+
+<script>
+    function togglePostOptions(postId) {
+        // Закрываем все остальные меню перед открытием нового
+        document.querySelectorAll('.post-options').forEach(menu => {
+            if (menu.id !== 'post-options-' + postId) {
+                menu.classList.remove('show');
+            }
+        });
+
+        const menu = document.getElementById('post-options-' + postId);
+        menu.classList.toggle('show');
+    }
+
+    // Закрытие меню при клике в любое другое место
+    window.onclick = function(event) {
+        if (!event.target.matches('.post-menu-btn')) {
+            document.querySelectorAll('.post-options').forEach(menu => {
+                menu.classList.remove('show');
+            });
+        }
+    }
+
+    function copyLink(postId) {
+        const url = window.location.origin + '/post/' + postId + '/';
+        navigator.clipboard.writeText(url).then(() => {
+            showToast('Ссылка скопирована!');
+        }).catch(() => {
+            showToast('Не удалось скопировать ссылку');
+        });
+    }
+
+    function hidePost(postId) {
+        fetch('/post/' + postId + '/hide/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCSRFToken(),
+                'Content-Type': 'application/json'
+            }
+        }).then(response => response.json()).then(data => {
+            if (data.success) {
+                window.history.back();
+                showToast(data.message);
+            } else {
+                showToast(data.message);
+            }
+        });
+    }
+
+    function deletePost(postId) {
+        if(confirm('Удалить этот пост?')) {
+            fetch('/post/' + postId + '/delete/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCSRFToken(),
+                    'Content-Type': 'application/json'
+                }
+            }).then(response => response.json()).then(data => {
+                if (data.success) {
+                    window.history.back();
+                    showToast(data.message);
+                } else {
+                    showToast(data.message);
+                }
+            });
+        }
+    }
+
+    function savePost(postId) {
+        fetch('/post/' + postId + '/save/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCSRFToken(),
+                'Content-Type': 'application/json'
+            }
+        }).then(response => response.json()).then(data => {
+            showToast(data.message);
+        });
+    }
+
+    function reportPost(postId) {
+        const reason = prompt('Почему вы хотите пожаловаться на этот пост?', 'Неприемлемый контент');
+        if (reason) {
+            const formData = new FormData();
+            formData.append('reason', reason);
+            fetch('/post/' + postId + '/report/', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': getCSRFToken()
+                }
+            }).then(response => response.json()).then(data => {
+                showToast(data.message);
+            });
+        }
+    }
+
+    function getCSRFToken() {
+        return document.querySelector('input[name="csrfmiddlewaretoken"]')?.value || document.getElementById('csrfToken')?.value;
+    }
+
+    function showToast(message) {
+        const toast = document.getElementById('global-toast');
+        if (toast) {
+            toast.textContent = message;
+            toast.classList.add('visible');
+            setTimeout(() => toast.classList.remove('visible'), 1800);
+        } else {
+            alert(message);
+        }
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,233 @@
+{% extends 'accounts/base.html' %}
+
+{% block title %}Сообщения{% endblock %}
+
+{% block header %}
+<header class="z-header">
+    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+        <h2>Сообщения</h2>
+        <button class="notifications-btn" onclick="window.location.href='/notifications/view/'">🔔</button>
+    </div>
+</header>
+{% endblock %}
+
+{% block content %}
+<style>
+    .feed-scroll {
+        flex: 1;
+        overflow-y: auto;
+        padding: 0 20px 100px;
+    }
+
+    .chat-search {
+        position: sticky;
+        top: 0;
+        background: white;
+        padding: 15px 0;
+        margin-bottom: 10px;
+        z-index: 10;
+    }
+
+    .chat-search input {
+        width: 100%;
+        padding: 12px;
+        border-radius: 12px;
+        border: 1px solid #e2e8f0;
+        background: #f1f5f9;
+        box-sizing: border-box;
+        font-size: 14px;
+    }
+
+    .chat-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .chat-item {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        padding: 14px 16px;
+        border-radius: 12px;
+        background: white;
+        cursor: pointer;
+        transition: all 0.2s;
+        position: relative;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .chat-item:hover {
+        background: #f8fafc;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    .chat-avatar {
+        width: 55px;
+        height: 55px;
+        border-radius: 50%;
+        background: #e2e8f0;
+        object-fit: cover;
+        flex-shrink: 0;
+        position: relative;
+    }
+
+    .chat-online-indicator {
+        width: 12px;
+        height: 12px;
+        background: #22c55e;
+        border-radius: 50%;
+        border: 2px solid white;
+        position: absolute;
+        bottom: 2px;
+        right: 2px;
+    }
+
+    .chat-info {
+        flex-grow: 1;
+        min-width: 0;
+    }
+
+    .chat-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 5px;
+    }
+
+    .chat-name {
+        font-weight: 700;
+        color: #1e293b;
+        font-size: 14px;
+    }
+
+    .chat-time {
+        font-size: 12px;
+        color: #94a3b8;
+    }
+
+    .chat-message {
+        font-size: 13px;
+        color: #64748b;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .chat-unread-badge {
+        background: #6366f1;
+        color: white;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: bold;
+        flex-shrink: 0;
+    }
+
+    .no-chats {
+        text-align: center;
+        padding: 50px 20px;
+        color: #94a3b8;
+    }
+
+    .no-chats p {
+        margin: 10px 0;
+        font-size: 14px;
+    }
+</style>
+
+<div class="feed-scroll">
+    <div class="chat-search">
+        <input type="text" id="chatSearch" placeholder="Поиск чатов..." onkeyup="filterChats()">
+    </div>
+
+    <div class="chat-list" id="chatList">
+        <!-- AI Bot Chat -->
+        <div class="chat-item" onclick="openChat('bot', 'AI Bot')">
+            <div style="position: relative;">
+                <img src="/static/default.jpg" class="chat-avatar" alt="AI Bot">
+                <div class="chat-online-indicator"></div>
+            </div>
+            
+            <div class="chat-info">
+                <div class="chat-header">
+                    <span class="chat-name">AI Bot</span>
+                    <span class="chat-time">Online</span>
+                </div>
+                <p class="chat-message">Спросите меня что-нибудь!</p>
+            </div>
+        </div>
+        {% if chats %}
+            {% for chat in chats %}
+                <div class="chat-item" onclick="openChat({{ chat.other_user.id }}, '{{ chat.other_user.username }}')">
+                    <div style="position: relative;">
+                        <img src="{% if chat.other_user.profile_picture %}{{ chat.other_user.profile_picture.url }}{% else %}/static/default.jpg{% endif %}" 
+                             class="chat-avatar" alt="{{ chat.other_user.username }}">
+                        <div class="chat-online-indicator"></div>
+                    </div>
+                    
+                    <div class="chat-info">
+                        <div class="chat-header">
+                            <span class="chat-name">@{{ chat.other_user.username }}</span>
+                            {% if chat.messages.last %}
+                            <span class="chat-time">
+                                {% if chat.messages.last.created_at.date == today %}
+                                    {{ chat.messages.last.created_at|time:"H:i" }}
+                                {% else %}
+                                    Вчера
+                                {% endif %}
+                            </span>
+                            {% endif %}
+                        </div>
+                        <p class="chat-message">
+                            {% if chat.messages.last %}
+                                {% if chat.messages.last.sender == request.user %}
+                                    You: {{ chat.messages.last.content|truncatechars:50 }}
+                                {% else %}
+                                    {{ chat.messages.last.content|truncatechars:50 }}
+                                {% endif %}
+                            {% else %}
+                                Начните беседу...
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+        <div class="no-chats">
+            <p>😴 Нет чатов</p>
+            <p style="font-size: 12px; color: #cbd5e1;">Начните беседу с кем-нибудь!</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    function openChat(userId, username) {
+        if (userId === 'bot') {
+            window.location.href = '/messages/chat/bot/';
+        } else {
+            // Открыть чат с пользователем
+            window.location.href = `/messages/chat/${userId}/`;
+        }
+    }
+
+    function filterChats() {
+        const searchVal = document.getElementById('chatSearch').value.toLowerCase();
+        const chatItems = document.querySelectorAll('.chat-item');
+        
+        chatItems.forEach(item => {
+            const chatName = item.querySelector('.chat-name').textContent.toLowerCase();
+            if (chatName.includes(searchVal)) {
+                item.style.display = 'flex';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,119 @@
+{% extends 'accounts/base.html' %}
+{% block title %}Регистрация{% endblock %}
+
+{% block content %}
+<style>
+    /* Стили для приведения к дизайну SocialNet */
+    .hero-section h1 {
+        font-size: 42px;
+        line-height: 1.1;
+        margin-bottom: 20px;
+        color: #1e293b;
+    }
+
+    .hero-card {
+        background: white;
+        border-radius: 24px;
+        padding: 30px 20px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+        transform: none !important;
+    }
+
+    /* Стили полей ввода */
+    .input-field {
+        width: 100%;
+        padding: 14px 16px;
+        margin-bottom: 12px;
+        border: 1px solid #f1f5f9;
+        border-radius: 12px;
+        background: #f8fafc;
+        font-size: 14px;
+        box-sizing: border-box;
+        outline: none;
+        transition: 0.2s;
+    }
+
+    .input-field:focus {
+        border-color: #6366f1;
+        background: white;
+        box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+    }
+
+    /* Кнопка */
+    .cta-form-btn {
+        width: 100%;
+        background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+        color: white;
+        border: none;
+        padding: 14px;
+        border-radius: 14px;
+        font-size: 16px;
+        font-weight: 700;
+        cursor: pointer;
+        box-shadow: 0 10px 20px rgba(99, 102, 241, 0.2);
+        margin-top: 10px;
+    }
+
+    /* Ссылка генератора */
+    .pass-gen-link {
+        display: block;
+        font-size: 12px;
+        color: #6366f1;
+        margin-bottom: 15px;
+        text-decoration: none;
+        text-align: right;
+    }
+
+    /* Скрываем стандартные help_text Django (списки под паролем) */
+    .helptext, .help-block {
+        display: none;
+    }
+
+    .errorlist {
+        color: #f43f5e;
+        font-size: 12px;
+        list-style: none;
+        padding: 0;
+        margin: -8px 0 10px 5px;
+    }
+</style>
+
+<div class="hero-section">
+    <h1>Join<br>SocialZH.</h1>
+    
+    <div class="hero-card">
+        <form method="POST">
+            {% csrf_token %}
+            
+            {% for field in form %}
+                <div class="form-group">
+                    {# Рендерим само поле с добавлением класса #}
+                    <input type="{{ field.field.widget.input_type }}" 
+                           name="{{ field.name }}" 
+                           id="{{ field.id_for_label }}"
+                           placeholder="{{ field.label }}" 
+                           class="input-field"
+                           {% if field.value %}value="{{ field.value }}"{% endif %}>
+                    
+                    {# Вывод ошибок если есть #}
+                    {% if field.errors %}
+                        <div class="errorlist">
+                            {{ field.errors.0 }}
+                        </div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+
+            <a href="{% url 'password_generator' %}" class="pass-gen-link">
+                ⚙️ Создать сложный пароль
+            </a>
+
+            <button type="submit" class="cta-form-btn">Создать аккаунт</button>
+        </form>
+    </div>
+
+    <p style="text-align:center; margin-top:15px; color: #64748b;">
+        Уже есть аккаунт? <a href="{% url 'login' %}" style="color: #6366f1; text-decoration: none; font-weight: 600;">Войти</a>
+    </p>
+</div>
+{% endblock %}

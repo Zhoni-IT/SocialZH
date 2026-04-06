@@ -1,0 +1,309 @@
+{% extends 'accounts/base.html' %}
+{% block title %}Social Quiz{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --correct: #22c55e;
+        --wrong: #ef4444;
+        --primary: #6366f1;
+        --gold: #fbc02d;
+    }
+    .quiz-header-info {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 15px;
+        gap: 10px;
+    }
+    .info-badge { 
+        flex: 1;
+        display: flex; align-items: center; justify-content: center;
+        padding: 8px; border-radius: 12px;
+        font-weight: bold; font-size: 14px;
+        border: 1px solid;
+    }
+    .coin-balance { background: rgba(251,192,45,0.1); border-color: var(--gold); color: #856404; }
+    .attempts-count { background: rgba(99, 102, 241, 0.1); border-color: var(--primary); color: var(--primary); }
+
+    .question-card {
+        background: white; padding: 20px; border-radius: 20px;
+        margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        border: 2px solid #e2e8f0;
+    }
+    .unanswered { border-color: var(--wrong) !important; background: #fff5f5 !important; }
+    .option-label {
+        display: flex; align-items: center; padding: 12px;
+        border: 1.5px solid #f1f5f9; border-radius: 12px;
+        cursor: pointer; margin-bottom: 8px; transition: 0.2s;
+    }
+    .correct-answer { border-color: var(--correct) !important; background: #f0fdf4 !important; }
+    .wrong-answer { border-color: var(--wrong) !important; background: #fef2f2 !important; }
+    
+    .limit-reached-card {
+        text-align: center; padding: 40px 20px;
+        background: white; border-radius: 20px;
+        border: 2px dashed #cbd5e1;
+    }
+    
+    .result-banner {
+        display: none; text-align: center; padding: 25px;
+        background: var(--primary); color: white; border-radius: 20px; margin-top: 20px;
+    }
+    .tab-bar { display: none !important; }
+    .quiz-container { padding-bottom: 20px !important; }
+    .back-link-styled {
+        text-decoration: none;
+        color: #6366f1;
+        font-weight: 600;
+        font-size: 14px;
+        padding: 10px 20px;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        transition: 0.3s;
+    }
+    .back-link-styled:hover {
+        background: #f8fafc;
+        border-color: #6366f1;
+    }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="feed-scroll quiz-container">
+    
+    <div class="quiz-header-info">
+        <div class="info-badge coin-balance">
+            💰 Баланс: {{ user.coins|default:0 }}
+        </div>
+        <div class="info-badge attempts-count">
+            🎮 Мүмкіндік: <span id="attemptsText">{{ attempts_left }} / 3</span>
+        </div>
+    </div>
+
+    {% if attempts_left > 0 %}
+    <form id="quizForm">
+        <div class="question-card" id="q1-block">
+                    <span class="question-text">1. Instagram желісі қай жылы іске қосылды?</span>
+                    <div class="options-group">
+                        <label class="option-label"><input type="radio" name="q1" value="0"> 2008</label>
+                        <label class="option-label"><input type="radio" name="q1" value="correct"> 2010</label>
+                        <label class="option-label"><input type="radio" name="q1" value="0"> 2012</label>
+                    </div>
+                </div>
+
+                <div class="question-card" id="q2-block">
+                    <span class="question-text">2. WhatsApp-тың негізін қалаушылардың бірі кім?</span>
+                    <div class="options-group">
+                        <label class="option-label"><input type="radio" name="q2" value="correct"> Ян Кум</label>
+                        <label class="option-label"><input type="radio" name="q2" value="0"> Павел Дуров</label>
+                        <label class="option-label"><input type="radio" name="q2" value="0"> Илон Маск</label>
+                    </div>
+                </div>
+
+                <div class="question-card" id="q3-block">
+                    <span class="question-text">3. YouTube-тағы ең бірінші видео қалай аталады?</span>
+                    <div class="options-group">
+                        <label class="option-label"><input type="radio" name="q3" value="0"> Hello World</label>
+                        <label class="option-label"><input type="radio" name="q3" value="correct"> Me at the zoo</label>
+                        <label class="option-label"><input type="radio" name="q3" value="0"> First Video</label>
+                    </div>
+                </div>
+
+                <div class="question-card" id="q4-block">
+                    <span class="question-text">4. TikTok-тың бастапқы атауы қандай болды?</span>
+                    <div class="options-group">
+                        <label class="option-label"><input type="radio" name="q4" value="correct"> Musical.ly</label>
+                        <label class="option-label"><input type="radio" name="q4" value="0"> Vine</label>
+                        <label class="option-label"><input type="radio" name="q4" value="0"> ShortVideo</label>
+                    </div>
+                </div>
+
+                <div class="question-card" id="q5-block">
+                    <span class="question-text">5. Facebook-тің негізгі түсі неге көк?</span>
+                    <div class="options-group">
+                        <label class="option-label"><input type="radio" name="q5" value="0"> Көк түс сенімді білдіреді</label>
+                        <label class="option-label"><input type="radio" name="q5" value="correct"> Цукерберг түстерді ажырата алмайды (дальтоник)</label>
+                        <label class="option-label"><input type="radio" name="q5" value="0"> Көк түс арзан</label>
+                    </div>
+                </div>
+
+                <div class="question-card" id="q6-block">
+                    <span class="question-text">6. Telegram-дағы "Арна" (Channel) мен "Топтың" (Group) айырмашылығы неде?</span>
+                    <div class="options-group">
+                        <label class="option-label"><input type="radio" name="q6" value="correct"> Арнада тек админ жаза алады</label>
+                        <label class="option-label"><input type="radio" name="q6" value="0"> Айырмашылығы жоқ</label>
+                        <label class="option-label"><input type="radio" name="q6" value="0"> Топта адам саны шексіз</label>
+                    </div>
+                </div>
+
+                <div class="question-card" id="q7-block">
+                    <span class="question-text">7. Халықаралық "Интернет күні" қашан атап өтіледі?</span>
+                    <div class="options-group">
+                        <label class="option-label"><input type="radio" name="q7" value="0"> 1 қаңтар</label>
+                        <label class="option-label"><input type="radio" name="q7" value="correct"> 29 қазан</label>
+                        <label class="option-label"><input type="radio" name="q7" value="0"> 1 маусым</label>
+                    </div>
+                </div>
+
+                <div class="question-card" id="q8-block">
+                    <span class="question-text">8. Бұрын Twitter-дегі бір жазбаның шектеуі қанша символ болды?</span>
+                    <div class="options-group">
+                        <label class="option-label"><input type="radio" name="q8" value="0"> 100</label>
+                        <label class="option-label"><input type="radio" name="q8" value="correct"> 140</label>
+                        <label class="option-label"><input type="radio" name="q8" value="0"> 280</label>
+                    </div>
+                </div>
+
+                <div class="question-card" id="q9-block">
+                    <span class="question-text">9. "Like" батырмасы алғаш рет қай желіде пайда болды?</span>
+                    <div class="options-group">
+                        <label class="option-label"><input type="radio" name="q9" value="correct"> Facebook</label>
+                        <label class="option-label"><input type="radio" name="q9" value="0"> Instagram</label>
+                        <label class="option-label"><input type="radio" name="q9" value="0"> VK</label>
+                    </div>
+                </div>
+
+                <div class="question-card" id="q10-block">
+                    <span class="question-text">10. Стив Джобс қай компанияның негізін қалады?</span>
+                    <div class="options-group">
+                        <label class="option-label"><input type="radio" name="q10" value="0"> Microsoft</label>
+                        <label class="option-label"><input type="radio" name="q10" value="0"> Google</label>
+                        <label class="option-label"><input type="radio" name="q10" value="correct"> Apple</label>
+                    </div>
+                </div>
+
+        <button type="button" class="cta-form-btn" id="submitBtn" onclick="submitQuiz()">Нәтижені жіберу</button>
+    </form>
+    {% else %}
+        <div class="limit-reached-card" style="display: flex; flex-direction: column; align-items: center; gap: 15px;">
+            <div style="font-size: 50px;">⏳</div>
+            <h3 style="margin: 0;">Бүгінгі лимит бітті!</h3>
+            <p style="color: #64748b; margin-bottom: 10px;">Тегін мүмкіндіктер таусылды. Бірақ сіз <b>30 монетаға</b> қосымша мүмкіндік ала аласыз.</p>
+            
+            <button onclick="buyAttempt()" class="cta-form-btn" style="width: 100%; max-width: 250px; background: #22c55e;">
+                Мүмкіндік сатып алу (30 💰)
+            </button>
+
+            <a href="{% url 'search' %}" class="back-link-styled">
+                Артқа қайту
+            </a>
+        </div>
+    {% endif %}
+
+    <div id="resultBanner" class="result-banner">
+        <h3>Нәтиже: <span id="resScore">0 / 10</span></h3>
+        <p id="resComment"></p>
+        <div style="margin: 15px 0; font-size: 18px;">
+            Табыс: +<span id="earnedCoins">0</span> монет
+        </div>
+        <button onclick="retryQuiz()" class="cta-form-btn" style="background:white; color:var(--primary);">
+            Келесі мүмкіндік
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+if (performance.getEntriesByType('navigation')[0].type === 'reload') {
+    // Если страница была перезагружена — отправляем пользователя назад
+    window.location.href = "{% url 'search' %}";
+}
+const totalQuestions = 10; // Поменяй на 10, когда вставишь все вопросы
+
+async function submitQuiz() {
+    let score = 0;
+    let firstUnanswered = null;
+
+    // Сброс стилей
+    for (let i = 1; i <= totalQuestions; i++) {
+        const block = document.getElementById(`q${i}-block`);
+        if (block) {
+            block.classList.remove('unanswered');
+            block.querySelectorAll('.option-label').forEach(l => l.classList.remove('correct-answer', 'wrong-answer'));
+        }
+    }
+
+    // Проверка заполнения
+    for (let i = 1; i <= totalQuestions; i++) {
+        const selected = document.querySelector(`input[name="q${i}"]:checked`);
+        if (!selected) {
+            document.getElementById(`q${i}-block`).classList.add('unanswered');
+            if (!firstUnanswered) firstUnanswered = i;
+        }
+    }
+
+    if (firstUnanswered) {
+        alert("Барлық сұраққа жауап беріңіз!");
+        document.getElementById(`q${firstUnanswered}-block`).scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+    }
+
+    // Считаем баллы визуально
+    for (let i = 1; i <= totalQuestions; i++) {
+        const selected = document.querySelector(`input[name="q${i}"]:checked`);
+        if (selected.value === "correct") {
+            score++;
+            selected.parentElement.classList.add('correct-answer');
+        } else {
+            selected.parentElement.classList.add('wrong-answer');
+        }
+    }
+
+    // Отправка на сервер
+    const formData = new FormData();
+    formData.append('score', score);
+
+    try {
+        const response = await fetch("{% url 'submit_quiz' %}", {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            document.getElementById('earnedCoins').innerText = data.earned;
+            document.getElementById('resScore').innerText = `${data.score} / 10`;
+            document.getElementById('attemptsText').innerText = `${data.attempts_left} / 3`;
+            document.getElementById('resultBanner').style.display = 'block';
+            document.getElementById('submitBtn').style.display = 'none';
+
+            if (data.score >= 5) confetti();
+            document.getElementById('resultBanner').scrollIntoView({ behavior: 'smooth' });
+        } else {
+            alert(data.message); // Если сервер вернул ошибку лимита
+            location.reload();
+        }
+    } catch (error) {
+        console.error("Қате:", error);
+    }
+}
+async function buyAttempt() {
+    if (!confirm("Мүмкіндік сатып алу үшін 30 монета жұмсайсыз ба?")) return;
+
+    try {
+        const response = await fetch("{% url 'buy_quiz_attempt' %}", {
+            method: 'POST',
+            headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+        });
+        const data = await response.json();
+
+        if (data.success) {
+            alert(data.message);
+            location.reload(); // Перезагружаем, чтобы форма викторины открылась снова
+        } else {
+            alert(data.message);
+        }
+    } catch (error) {
+        console.error("Error:", error);
+    }
+}
+
+function retryQuiz() {
+    location.reload();
+}
+</script>
+{% endblock %}

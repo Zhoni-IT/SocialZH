@@ -1,0 +1,79 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SocialZH | {% block title %}SocialNet{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'style.css' %}">
+    <style>
+        .back-btn {
+            background: transparent;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6366f1;
+            transition: color 0.2s;
+        }
+        .back-btn:hover {
+            color: #4f46e5;
+        }
+
+        .inline-badge {
+            position: absolute;
+            top: -4px;
+            right: -6px;
+            background: #e11d48;
+            color: white;
+            border-radius: 999px;
+            width: 18px;
+            height: 18px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 0 3px;
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+<div class="mobile-container">
+    {% block header %}
+    <header class="z-header" style="display: flex; justify-content: space-between; align-items: center;">
+        {% if request.resolver_match.url_name not in 'feed,search,add,messages,profile,login,register' %}
+        <button class="back-btn" onclick="window.history.back()">←</button>
+        {% else %}
+        <div style="width: 40px;"></div>
+        {% endif %}
+        <a href="{% url 'feed' %}" class="logo" style="text-decoration: none; color: inherit; {% if request.resolver_match.url_name in 'feed,login,register' %}flex: 0; margin-right: auto;{% else %}flex: 1; text-align: center;{% endif %}">SocialZH</a>
+        <div style="width: 40px;"></div>
+    </header>
+    {% endblock %}
+
+    {% block content %}{% endblock %}
+
+    {% if user.is_authenticated %}
+    <nav class="tab-bar">
+        <a href="{% url 'feed' %}" class="tab-item {% if request.resolver_match.url_name == 'feed' %}active{% endif %}">🏠</a>
+        <a href="{% url 'search' %}" class="tab-item {% if request.resolver_match.url_name == 'search' %}active{% endif %}">🔍</a>
+        <a href="{% url 'add' %}" class="tab-item {% if request.resolver_match.url_name == 'add' %}active{% endif %}">➕</a>
+        <a href="{% url 'messages' %}" class="tab-item {% if request.resolver_match.url_name == 'messages' %}active{% endif %}">💬</a>
+        <a href="{% url 'profile' %}" class="tab-item {% if request.resolver_match.url_name == 'profile' %}active{% endif %}">👤</a>
+    </nav>
+    {% endif %}
+</div>
+
+<div id="global-toast" class="global-toast"></div>
+
+{% csrf_token %}
+
+<script src="{% static 'script.js' %}"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,66 @@
+{% extends 'accounts/base.html' %}
+{% block title %}Результат сортировки{% endblock %}
+
+{% block extra_css %}
+<style>
+    .result-card {
+        background: white;
+        padding: 25px;
+        border-radius: 25px;
+        transform: none !important;
+        text-align: center;
+    }
+    .hashtag-container {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin: 20px 0;
+        text-align: left;
+    }
+    .hashtag-item {
+        font-size: 18px;
+        font-weight: bold;
+        color: #1e293b;
+        padding: 10px 15px;
+        background: #f8fafc;
+        border-radius: 12px;
+        border-left: 4px solid #6366f1;
+        animation: slideIn 0.3s ease forwards;
+    }
+    .hash-symbol {
+        color: #6366f1;
+        margin-right: 5px;
+    }
+    @keyframes slideIn {
+        from { opacity: 0; transform: translateX(-20px); }
+        to { opacity: 1; transform: translateX(0); }
+    }
+    .back-link {
+        display: inline-block;
+        margin-top: 20px;
+        color: #6366f1;
+        text-decoration: none;
+        font-weight: 600;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="feed-scroll" style="padding: 20px;">
+    <div class="result-card">
+        <h2 style="color: #6366f1;">Результаты сортировки</h2>
+        <div class="hashtag-container">
+            {% if words %}
+                {% for word in words %}
+                <div class="hashtag-item">
+                    <span class="hash-symbol">#</span>{{ word }}
+                </div>
+                {% endfor %}
+            {% else %}
+                Слова не найдены
+            {% endif %}
+        </div>
+        <a href="javascript:history.back()" class="back-link">← Назад</a>
+    </div>
+</div>
+{% endblock %}

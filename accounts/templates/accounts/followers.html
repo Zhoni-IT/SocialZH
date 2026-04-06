@@ -1,0 +1,116 @@
+{% extends 'accounts/base.html' %}
+{% block title %}Подписчики и подписки{% endblock %}
+
+{% block content %}
+<div class="feed-scroll" style="padding:20px;">
+    <h2 style="margin-bottom:16px;">{{ profile_user.username }} — Подписчики / Подписки</h2>
+
+    <div style="display:flex; gap:16px; margin-bottom:20px; flex-wrap:wrap;">
+        <div style="padding:14px; border: 1px solid #e2e8f0; border-radius:10px; width: 180px;">
+            <div style="font-size:27px; font-weight:700;">{{ profile_user.followers_count }}</div>
+            <div style="font-size:12px; color:#64748b;">Подписчики</div>
+        </div>
+        <div style="padding:14px; border: 1px solid #e2e8f0; border-radius:10px; width: 180px;">
+            <div style="font-size:27px; font-weight:700;">{{ profile_user.following_count }}</div>
+            <div style="font-size:12px; color:#64748b;">Подписки</div>
+        </div>
+    </div>
+
+    <style>
+        .followers-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .followers-tab {
+            padding: 10px 14px;
+            border-radius: 999px;
+            text-decoration: none;
+            font-weight: 700;
+            color: #64748b;
+            background: #f8fafc;
+            transition: all 0.2s ease;
+        }
+        .followers-tab:hover {
+            background: #e2e8f0;
+        }
+        .followers-tab.active {
+            color: #111827;
+            background: #ede9fe;
+            box-shadow: 0 0 0 1px #cbc6f4;
+        }
+        .section-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            background: white;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+            padding: 12px;
+        }
+        .person-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 8px 0;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .person-row:last-child { border-bottom: none; }
+        .person-row a.username {
+            color: #1f2937;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .person-row a.username:hover { color: #4f46e5; }
+    </style>
+
+    <div class="followers-tabs">
+        <a href="{% url 'followers_list' profile_user.username %}?tab=followers" class="followers-tab {% if tab == 'followers' %}active{% endif %}">Подписчики</a>
+        <a href="{% url 'followers_list' profile_user.username %}?tab=following" class="followers-tab {% if tab == 'following' %}active{% endif %}">Подписки</a>
+    </div>
+
+    <div id="followersSection" class="section-card" style="display: {% if tab == 'followers' or not tab %}block{% else %}none{% endif %}; margin-bottom:24px;">
+        <h3 style="margin: 0 0 8px 0;">Список подписчиков</h3>
+        {% if followers %}
+            <div style="display:flex; flex-direction:column; gap:10px;">
+            {% for u in followers %}
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+                    <a href="{% url 'profile_view' u.username %}" style="text-decoration:none; color:inherit;">{{ u.username }}</a>
+                    {% if request.user.is_authenticated and request.user.id != u.id %}
+                    <a href="/messages/chat/{{ u.id }}/" style="background:#6366f1;color:white;padding:6px 10px;border-radius:8px;text-decoration:none;font-size:12px;">💬</a>
+                    {% endif %}
+                </div>
+            {% endfor %}
+            </div>
+        {% else %}
+            <p style="color:#64748b;">Нет подписчиков</p>
+        {% endif %}
+    </div>
+
+    <div id="followingSection" class="section-card" style="display: {% if tab == 'following' %}block{% else %}none{% endif %};">
+        <h3 style="margin: 0 0 8px 0;">Список подписок</h3>
+        {% if following %}
+            <ul>
+            {% for u in following %}
+                <li><a href="{% url 'profile_view' u.username %}">{{ u.username }}</a></li>
+            {% endfor %}
+            </ul>
+        {% else %}
+            <p style="color:#64748b;">Нет подписок</p>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var tab = '{{ tab }}';
+        if (tab === 'following') {
+            var el = document.getElementById('followingSection');
+            if (el) el.scrollIntoView({ behavior: 'smooth' });
+        } else {
+            var el = document.getElementById('followersSection');
+            if (el) el.scrollIntoView({ behavior: 'smooth' });
+        }
+    });
+</script>
+{% endblock %}

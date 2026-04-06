@@ -1,0 +1,15 @@
+{% extends 'accounts/base.html' %}
+{% block title %}Вход{% endblock %}
+{% block content %}
+<div class="hero-section">
+    <h1>Design your<br>Moment.</h1>
+    {% if error %}<p style="color:red;">{{ error }}</p>{% endif %}
+    <form method="POST">
+        {% csrf_token %}
+        <input type="text" name="username" placeholder="Username" class="input-field" required>
+        <input type="password" name="password" placeholder="Пароль" class="input-field" required>
+        <button type="submit" class="cta-form-btn">Войти</button>
+    </form>
+    <p style="text-align:center;margin-top:15px;">Нет аккаунта? <a href="{% url 'register' %}">Регистрация</a></p>
+</div>
+{% endblock %}

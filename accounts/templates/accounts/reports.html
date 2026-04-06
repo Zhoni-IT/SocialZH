@@ -1,0 +1,108 @@
+{% extends 'accounts/base.html' %} {% load static %}
+{% block title %}Отчеты{% endblock %}
+
+{% block extra_css %}
+<style>
+    .report-box {
+        background: white;
+        margin: 20px;
+        padding: 25px;
+        border-radius: 20px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    }
+    .file-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 15px;
+        background: #f8fafc;
+        border-radius: 12px;
+        margin-bottom: 10px;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+    .file-item:hover {
+        background: #f1f5f9;
+    }
+    .file-item input {
+        width: 22px;
+        height: 22px;
+        accent-color: #6366f1;
+    }
+    .dl-btn {
+        width: 100%;
+        padding: 15px;
+        background: linear-gradient(135deg, #6366f1, #a855f7);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        font-weight: bold;
+        font-size: 16px;
+        margin-top: 20px;
+        cursor: pointer;
+    }
+    .dl-btn:hover {
+        transform: translateY(-2px);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="feed-scroll" style="padding: 10px 20px;">
+    <div class="report-box">
+        <h3 style="margin-top:0; color:#1e293b;">📊 Скачать данные профиля</h3>
+        <p style="font-size: 13px; color: #64748b; margin-bottom: 20px;">
+            Выберите файлы, которые хотите скачать:
+        </p>
+        
+        <form id="downloadForm">
+            <label class="file-item">
+                <input type="checkbox" name="files" value="profile_report.pdf" checked>
+                <span>Статистика профиля (PDF)</span>
+            </label>
+            
+            <label class="file-item">
+                <input type="checkbox" name="files" value="my_photos.zip" checked>
+                <span>Архив всех фото (ZIP)</span>
+            </label>
+            
+            <label class="file-item">
+                <input type="checkbox" name="files" value="security_audit.txt" checked>
+                <span>История переписки (TXT)</span>
+            </label>
+
+            <button type="button" class="dl-btn" onclick="downloadSelected()">
+                Скачать выбранные файлы
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function downloadSelected() {
+    const checked = document.querySelectorAll('input[name="files"]:checked');
+    
+    if (checked.length === 0) {
+        alert("Выберите хотя бы один файл для скачивания!");
+        return;
+    }
+
+    // Обратите внимание: статика в JS через Django-теги работает только так
+    const staticBaseUrl = "{% static 'downloads/' %}";
+
+    checked.forEach(checkbox => {
+        const filename = checkbox.value;
+        const link = document.createElement('a');
+        link.href = staticBaseUrl + filename;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    });
+
+    alert("Загрузка началась! Проверьте папку загрузок.");
+}
+</script>
+{% endblock %}

@@ -1,0 +1,111 @@
+{% extends 'accounts/base.html' %}
+{% block title %}New Post{% endblock %}
+
+{% block header %}
+<header class="z-header">
+    <div class="logo">New Post</div>
+    <label id="share-btn" for="submit-post" style="color: var(--primary); font-weight: bold; cursor: pointer; display: none;">
+        Share
+    </label>
+</header>
+{% endblock %}
+
+{% block content %}
+<div class="feed-scroll" style="padding: 20px; padding-bottom: 100px;">
+    <form method="POST" enctype="multipart/form-data" id="postForm">
+        {% csrf_token %}
+        
+        <div style="display: none;">
+            {{ form.image }}
+        </div>
+
+        <div id="upload-area" onclick="document.getElementById('id_image').click();" 
+             style="width: 100%; aspect-ratio: 1/1; background: #f8fafc; border: 2px dashed #cbd5e1; border-radius: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #94a3b8; cursor: pointer; overflow: hidden; position: relative;">
+            
+            <div id="upload-placeholder" style="text-align: center;">
+                <span style="font-size: 40px;">📸</span>
+                <p style="margin-top: 10px; font-weight: 500;">Tap to upload photo</p>
+            </div>
+            
+            <img id="image-preview" src="#" alt="Preview" style="display: none; width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0;">
+        </div>
+
+        <div style="margin-top: 20px;">
+            <textarea name="caption" id="id_caption" placeholder="Write a caption..." 
+                      style="width: 100%; border: none; font-family: inherit; font-size: 16px; outline: none; resize: none; min-height: 120px; color: #1e293b;"></textarea>
+        </div>
+        
+        <hr style="border: 0; border-top: 1px solid #f1f5f9; margin: 15px 0;">
+
+        <input type="hidden" name="location" id="id_location_input">
+
+        <div class="action-item" onclick="addLocation()" style="display: flex; align-items: center; padding: 12px 0; cursor: pointer; border-bottom: 1px solid #f1f5f9;">
+            <div style="font-size: 18px; width: 30px;">📍</div>
+            <div style="flex-grow: 1;">
+                <div id="location-text" style="font-weight: 500; color: #334155;">Add Location</div>
+                <div id="selected-location" style="font-size: 12px; color: var(--primary); display: none;"></div>
+            </div>
+            <div style="color: #94a3b8; font-size: 12px;">➡️</div>
+        </div>
+
+        <input type="submit" id="submit-post" style="display: none;">
+    </form>
+</div>
+
+<script>
+    const imageInput = document.getElementById('id_image');
+    const captionInput = document.getElementById('id_caption');
+    const shareBtn = document.getElementById('share-btn');
+    const preview = document.getElementById('image-preview');
+    const placeholder = document.getElementById('upload-placeholder');
+    const area = document.getElementById('upload-area');
+
+    // Функция проверки условий
+    function validateForm() {
+        const hasImage = imageInput.files.length > 0;
+        const hasCaption = captionInput.value.trim().length > 0;
+
+        if (hasImage && hasCaption) {
+            shareBtn.style.display = 'block';
+        } else {
+            shareBtn.style.display = 'none';
+        }
+    }
+
+    // Следим за загрузкой фото
+    imageInput.onchange = function () {
+        const [file] = this.files;
+        if (file) {
+            preview.src = URL.createObjectURL(file);
+            preview.style.display = 'block';
+            placeholder.style.display = 'none';
+            area.style.border = 'none';
+            validateForm(); // Проверяем при выборе фото
+        }
+    };
+
+    // Следим за вводом текста
+    captionInput.addEventListener('input', validateForm);
+    
+    
+    function addLocation() {
+    const loc = prompt("Введите местоположение:");
+    if (loc) {
+        document.getElementById('id_location_input').value = loc; // Записываем в скрытый input
+        document.getElementById('location-text').innerText = "Location added"; // Меняем текст
+        document.getElementById('selected-location').innerText = loc; // Показываем выбранное
+        document.getElementById('selected-location').style.display = 'block';
+    }
+}
+</script>
+
+<style>
+    .action-item:active {
+        background-color: #f1f5f9;
+        border-radius: 8px;
+    }
+    textarea::placeholder {
+        color: #94a3b8;
+    }
+</style>
+{% endblock %}

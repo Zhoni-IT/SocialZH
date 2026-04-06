@@ -1,0 +1,327 @@
+{% extends 'accounts/base.html' %}
+{% load custom_filters %}
+
+{% block title %}Лента{% endblock %}
+
+{% block content %}
+<div class="feed-scroll">
+    <div style="margin-top: 10px; margin-bottom: 20px;">
+        <div style="padding: 0 20px; font-weight: bold; font-size: 14px; color: var(--text);">Рекомендации</div>
+        <div class="carousel" id="recommendations-carousel"></div>
+    </div>
+    
+    {% for post in posts %}
+    <article class="post-card" id="post-{{ post.id }}">
+        <div class="post-header">
+            <div class="post-user-info">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <a href="{% url 'profile_view' post.user.username %}" class="post-user-link">@{{ post.user.username }}</a>
+                    {% if request.user.is_authenticated and request.user.id != post.user.id %}
+                        <a href="/messages/chat/{{ post.user.id }}/" class="chat-icon">💬</a>
+                    {% endif %}
+                </div>
+                {% if post.location %}<div class="post-location">📍 {{ post.location }}</div>{% endif %}
+            </div>
+            
+            <div class="post-meta">
+                <span class="post-time">{{ post.created_at|timesince }}</span>
+                <div class="dropdown">
+                    <button class="post-menu-btn" onclick="togglePostOptions('{{ post.id }}')">⋮</button>
+                    <div class="post-options" id="post-options-{{ post.id }}">
+                        {% if post.user == request.user %}
+                            <button class="post-delete-btn" data-postid="{{ post.id }}">Удалить пост</button>
+                        {% else %}
+                            <button class="post-save-btn" data-postid="{{ post.id }}">Сохранить</button>
+                            <button class="post-report-btn" data-postid="{{ post.id }}">Пожаловаться</button>
+                            <button class="post-hide-btn" data-postid="{{ post.id }}">Скрыть</button>
+                            <button class="post-copy-btn" data-postid="{{ post.id }}">Копировать ссылку</button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if post.image %}
+        <div class="post-image-container">
+            <img src="{{ post.image.url }}" alt="Post image" class="post-main-img">
+        </div>
+        {% endif %}
+
+        <div class="post-footer">
+            <div class="post-caption-wrapper">
+                <span class="caption-username">@{{ post.user.username }}</span>
+                <span class="caption-text">{{ post.caption|format_post }}</span>
+            </div>
+        </div>
+    </article>
+    {% empty %}
+    <div class="empty-feed">
+        <p>Пока нет постов. Будьте первым!</p>
+    </div>
+    {% endfor %}
+</div>
+
+<style>
+    /* Убираем фиксированную высоту и позволяем карточке расти вниз */
+.post-card {
+    background: white;
+    margin-bottom: 25px;
+    border-radius: 20px; /* Немного уменьшил для более современного вида */
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Контейнер картинки: сохраняем пропорции, но не ограничиваем жестко */
+.post-image-container {
+    width: 100%;
+    background-color: #f8fafc;
+}
+
+.post-main-img {
+    width: 100%;
+    height: auto;
+    max-height: 500px; /* Чтобы слишком длинные фото не занимали весь экран */
+    object-fit: cover;
+    display: block;
+}
+
+/* Стили для подписи под фото */
+.post-footer {
+    padding: 12px 16px 18px; /* Больше отступа снизу */
+}
+
+.post-caption-wrapper {
+    font-size: 14px;
+    line-height: 1.4;
+    color: #1e293b;
+    word-wrap: break-word; /* Важно: чтобы длинные слова не ломали верстку */
+}
+
+.caption-username {
+    font-weight: 700;
+    margin-right: 6px;
+    color: #334155;
+}
+
+.caption-text {
+    white-space: pre-line; /* Сохраняет переносы строк из текста */
+}
+
+/* Иконка чата */
+.chat-icon {
+    text-decoration: none;
+    font-size: 16px;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+}
+.chat-icon:hover { opacity: 1; }
+
+    .post-header {
+        padding: 14px 18px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .post-user-link {
+        font-weight: 700;
+        color: #6366f1;
+        text-decoration: none;
+    }
+
+    .post-location {
+        font-size: 11px;
+        color: #94a3b8;
+    }
+
+    .post-meta {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        position: relative;
+    }
+
+    .post-time {
+        font-size: 11px;
+        color: #94a3b8;
+    }
+
+    .post-menu-btn {
+        background: none;
+        border: none;
+        font-size: 20px;
+        color: #64748b;
+        cursor: pointer;
+        padding: 5px;
+    }
+
+    /* Всплывающее меню */
+    .post-options {
+        display: none;
+        position: absolute;
+        right: 0;
+        top: 30px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        z-index: 1001;
+        min-width: 180px;
+        border: 1px solid #f1f5f9;
+        overflow: hidden;
+    }
+
+    .post-options.show {
+        display: block;
+    }
+
+    .menu-item {
+        display: block;
+        width: 100%;
+        padding: 12px 16px;
+        text-align: left;
+        background: none;
+        border: none;
+        font-size: 13px;
+        color: #334155;
+        cursor: pointer;
+        text-decoration: none;
+        transition: background 0.2s;
+    }
+
+    .menu-item:hover {
+        background: #f8fafc;
+    }
+
+    .menu-item.delete {
+        color: #ef4444;
+    }
+
+    .post-content {
+        padding: 12px 18px 16px 18px;
+    }
+
+    .empty-feed {
+        text-align: center;
+        padding: 60px;
+        color: #94a3b8;
+    }
+</style>
+
+<script>
+    function togglePostOptions(postId) {
+        // Закрываем все остальные меню перед открытием нового
+        document.querySelectorAll('.post-options').forEach(menu => {
+            if (menu.id !== 'post-options-' + postId) {
+                menu.classList.remove('show');
+            }
+        });
+
+        const menu = document.getElementById('post-options-' + postId);
+        menu.classList.toggle('show');
+    }
+
+    // Закрытие меню при клике в любое другое место
+    window.onclick = function(event) {
+        if (!event.target.matches('.post-menu-btn')) {
+            document.querySelectorAll('.post-options').forEach(menu => {
+                menu.classList.remove('show');
+            });
+        }
+    }
+
+    function openPost(postId) {
+        window.location.href = '/post/' + postId + '/';
+    }
+
+    function copyLink(postId) {
+        const url = window.location.origin + '/post/' + postId + '/';
+        navigator.clipboard.writeText(url).then(() => {
+            showToast('Ссылка скопирована!');
+        }).catch(() => {
+            showToast('Не удалось скопировать ссылку');
+        });
+    }
+
+    function hidePost(postId) {
+        fetch('/post/' + postId + '/hide/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCSRFToken(),
+                'Content-Type': 'application/json'
+            }
+        }).then(response => response.json()).then(data => {
+            if (data.success) {
+                document.getElementById('post-' + postId).style.display = 'none';
+                showToast(data.message);
+            } else {
+                showToast(data.message);
+            }
+        });
+    }
+
+    function deletePost(postId) {
+        if(confirm('Удалить этот пост?')) {
+            fetch('/post/' + postId + '/delete/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCSRFToken(),
+                    'Content-Type': 'application/json'
+                }
+            }).then(response => response.json()).then(data => {
+                if (data.success) {
+                    document.getElementById('post-' + postId).remove();
+                    showToast(data.message);
+                } else {
+                    showToast(data.message);
+                }
+            });
+        }
+    }
+
+    function savePost(postId) {
+        fetch('/post/' + postId + '/save/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCSRFToken(),
+                'Content-Type': 'application/json'
+            }
+        }).then(response => response.json()).then(data => {
+            showToast(data.message);
+        });
+    }
+
+    function reportPost(postId) {
+        const reason = prompt('Почему вы хотите пожаловаться на этот пост?', 'Неприемлемый контент');
+        if (reason) {
+            const formData = new FormData();
+            formData.append('reason', reason);
+            fetch('/post/' + postId + '/report/', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': getCSRFToken()
+                }
+            }).then(response => response.json()).then(data => {
+                showToast(data.message);
+            });
+        }
+    }
+
+    function getCSRFToken() {
+        return document.querySelector('input[name="csrfmiddlewaretoken"]')?.value || document.getElementById('csrfToken')?.value;
+    }
+
+    function showToast(message) {
+        const toast = document.getElementById('global-toast');
+        if (toast) {
+            toast.textContent = message;
+            toast.classList.add('visible');
+            setTimeout(() => toast.classList.remove('visible'), 1800);
+        } else {
+            alert(message);
+        }
+    }
+</script>
+{% endblock %}

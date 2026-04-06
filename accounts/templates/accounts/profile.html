@@ -1,0 +1,642 @@
+{% extends 'accounts/base.html' %}
+{% load custom_filters %}
+
+{% block title %}Профиль{% endblock %}
+
+{% block header %}
+<header class="z-header">
+    <a href="{% url 'feed' %}" style="text-decoration: none; color: #6366f1; font-weight: 800; font-size: 20px;">SocialZH</a>
+    {% if is_owner %}
+    <div onclick="toggleSettings(true)" style="cursor: pointer; font-size: 20px;">⚙️</div>
+    {% endif %}
+</header>
+{% endblock %}
+
+{% block content %}
+<style>
+    .feed-scroll { 
+        flex: 1; 
+        overflow-y: auto; 
+        padding: 0 20px 100px; 
+    }
+
+    .avatar-container { position: relative; width: 110px; height: 110px; margin: 20px auto 15px; }
+    .avatar-main { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 4px solid white; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+    .avatar-main.gold-border { border: 5px solid #fbbf24; box-shadow: 0 0 25px rgba(251, 191, 36, 0.5), 0 10px 25px rgba(0,0,0,0.1); }
+
+    .verified-name-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: #2563eb;
+        color: white;
+        border-radius: 12px;
+        padding: 2px 8px;
+        margin-left: 8px;
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    {% if is_owner %}
+    .edit-avatar-btn {
+        position: absolute; bottom: 0; right: 0;
+        background: #6366f1; color: white; width: 32px; height: 32px;
+        border-radius: 50%; display: flex; align-items: center; justify-content: center;
+        border: 3px solid white; cursor: pointer; z-index: 10;
+    }
+    {% endif %}
+    
+    .avatar-menu {
+        display: none; position: absolute; top: 110%; left: 50%; transform: translateX(-50%);
+        background: white; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        z-index: 100; width: 150px; border: 1px solid #f1f5f9;
+    }
+
+    .balance-badge { background: #fff7ed; padding: 6px 14px; border-radius: 20px; font-weight: bold; display: inline-flex; align-items: center; gap: 6px; color: #ea580c; border: 1px solid #ffedd5; }
+    
+    .shop-link-card {
+        background: white; border: 2px solid #6366f1; border-radius: 24px;
+        padding: 16px; display: flex; align-items: center; justify-content: space-between;
+        text-decoration: none; color: #1e293b; margin: 20px 0;
+    }
+
+    /* Стили для пунктов меню в шторке */
+    .drawer-item {
+        text-decoration: none;
+        color: #334155;
+        font-size: 16px;
+        font-weight: 500;
+        padding: 14px 12px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        transition: background 0.2s;
+    }
+    .drawer-item:active {
+        background: #f8fafc;
+    }
+    .drawer-item .icon {
+        font-size: 18px;
+        width: 24px;
+        text-align: center;
+    }
+    .drawer-item.logout {
+        color: #f43f5e;
+    }
+
+    .follow-btn {
+        background: #6366f1; color: white; border: none; padding: 10px 20px; border-radius: 20px; font-weight: bold; cursor: pointer;
+    }
+    .message-btn {
+        background: #f1f5f9; color: #334155; border: none; padding: 10px 20px; border-radius: 20px; font-weight: bold; cursor: pointer; margin-left: 10px;
+    }
+
+    .post-card {
+        position: relative;
+    }
+
+    .post-menu-btn {
+        background: transparent;
+        border: none;
+        font-size: 20px;
+        color: #64748b;
+        cursor: pointer;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+    }
+
+    .post-menu-btn:hover {
+        background: rgba(99, 102, 241, 0.12);
+        color: #4f46e5;
+    }
+
+    .post-options {
+        position: absolute;
+        top: 40px;
+        right: 15px;
+        width: 170px;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        box-shadow: 0 8px 22px rgba(0,0,0,0.16);
+        display: none;
+        z-index: 30;
+    }
+
+    .post-options.show {
+        display: block;
+    }
+
+    .post-options button {
+        width: 100%;
+        text-align: left;
+        background: transparent;
+        border: none;
+        padding: 10px 12px;
+        cursor: pointer;
+        color: #334155;
+        font-size: 14px;
+    }
+
+    .post-options button:hover {
+        background: #f8fafc;
+    }
+
+    .posts-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        margin-top: 20px;
+    }
+
+    .grid-item {
+        aspect-ratio: 1/1;
+        background: #f1f5f9;
+        overflow: hidden;
+        cursor: pointer;
+        position: relative;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    .grid-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.2s;
+    }
+
+    .grid-item:hover .grid-img {
+        transform: scale(1.05);
+    }
+
+    .grid-text {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #e2e8f0;
+        color: #64748b;
+        font-size: 12px;
+        text-align: center;
+        padding: 10px;
+    }
+
+    .no-posts {
+        grid-column: 1 / -1;
+        text-align: center;
+        padding: 50px;
+        color: #94a3b8;
+    }
+</style>
+
+<div class="feed-scroll">
+    <input type="hidden" id="csrfToken" value="{{ csrf_token }}" />
+    <div style="text-align: center;">
+        
+        <div class="avatar-container">
+            <img src="{% if profile_user.profile_picture %}{{ profile_user.profile_picture.url }}{% else %}/static/default.jpg{% endif %}" 
+                 class="avatar-main{% if profile_user.has_gold_border %} gold-border{% endif %}" id="mainAvatar">
+            {% if is_owner %}
+            <button class="edit-avatar-btn" onclick="toggleAvatarMenu()" title="Изменить аватар">✎</button>
+            {% endif %}
+            
+            <div class="avatar-menu" id="avatarMenu">
+                <label for="id_profile_picture" style="display:block; padding:10px; cursor:pointer;">🔄 Изменить</label>
+                <button type="button" style="width:100%; padding:10px; color:#f43f5e; border:none; background:none;" onclick="deletePhoto()">🗑️ Удалить</button>
+            </div>
+        </div>
+
+        {% if is_owner %}
+        <form id="avatarForm" method="POST" enctype="multipart/form-data" style="display: none;">
+            {% csrf_token %}
+            <input type="file" name="profile_picture" id="id_profile_picture" onchange="this.form.submit()">
+            <input type="checkbox" name="profile_picture-clear" id="id_profile_picture-clear">
+        </form>
+        {% endif %}
+
+        <h2 style="margin: 0; color: #1e293b; display: flex; justify-content: center; align-items: center; gap: 8px;">
+            {{ profile_user.first_name|default:profile_user.username }}
+            {% if profile_user.has_verified %}
+            <span class="verified-name-badge">✓ Verified</span>
+            {% endif %}
+        </h2>
+        <p style="color: #64748b; font-size: 13px;">Product Designer & Traveller</p>
+
+        <!-- Отображение роли (только админам) -->
+        {% if request.user.is_admin %}
+        <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin: 10px 0;">
+            {% if profile_user.is_admin %}
+            <span style="background: #ef4444; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold;">👑 Админ</span>
+            {% elif profile_user.is_moderator %}
+            <span style="background: #f59e0b; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold;">✓ Модератор</span>
+            {% else %}
+            <span style="background: #3b82f6; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold;">👤 Пользователь</span>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        {% if is_owner %}
+        <div class="balance-badge" style="margin-top: 10px;">
+            <span>💰 {% if profile_user.has_infinite_coins %}∞{% else %}{{ profile_user.coins|default:0 }}{% endif %}</span>
+        </div>
+        {% endif %}
+
+        <div style="display: flex; justify-content: center; gap: 30px; margin: 20px 0;">
+            <a href="{% url 'followers_list' profile_user.username %}?tab=followers" style="text-align:center; text-decoration:none; color:inherit;">
+                <b id="followersCount" style="display:block;">{{ profile_user.followers_count }}</b>
+                <small style="color:#94a3b8;">Подписчики</small>
+            </a>
+            <a href="{% url 'followers_list' profile_user.username %}?tab=following" style="text-align:center; text-decoration:none; color:inherit;">
+                <b id="followingCount" style="display:block;">{{ profile_user.following_count }}</b>
+                <small style="color:#94a3b8;">Подписки</small>
+            </a>
+        </div>
+
+        {% if request.user.is_authenticated and not is_owner %}
+        <div style="margin: 20px 0; display: flex; justify-content: center; gap: 10px;">
+            <button id="followBtn" class="follow-btn" style="width: 120px;" onclick="toggleFollow('{{ profile_user.username }}')">
+                {% if is_following %}Отписаться{% else %}Подписаться{% endif %}
+            </button>
+            <a href="/messages/chat/{{ profile_user.id }}/" class="message-btn" style="text-decoration: none; display: flex; align-items: center;">💬 Message</a>
+        </div>
+        {% endif %}
+
+        {% if is_owner %}
+        <a href="{% url 'shop' %}" class="shop-link-card">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 22px;">🛍️</span>
+                <div style="text-align: left;">
+                    <b style="font-size: 13px; display: block;">Upgrade Shop</b>
+                    <span style="font-size: 11px; color: #64748b;">Профильді жақсарту</span>
+                </div>
+            </div>
+            <span style="color: #6366f1;">➔</span>
+        </a>
+
+        {% if profile_user.is_admin %}
+        <a href="{% url 'admin_dashboard' %}" class="shop-link-card" style="border-color: #ef4444; background: #fef2f2;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 22px;">🔐</span>
+                <div style="text-align: left;">
+                    <b style="font-size: 13px; display: block; color: #ef4444;">Админ-панель</b>
+                    <span style="font-size: 11px; color: #64748b;">Управление пользователями</span>
+                </div>
+            </div>
+            <span style="color: #ef4444;">➔</span>
+        </a>
+        {% endif %}
+
+        <!-- Активные улучшения -->
+        {% if profile_user.has_gold_border or profile_user.has_verified %}
+        <div style="padding: 15px; background: #f0f4ff; border-radius: 12px; margin: 15px 0;">
+            <div style="font-weight: bold; margin-bottom: 10px; color: #1e293b;">Активные улучшения:</div>
+            {% if profile_user.has_gold_border %}
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px; background: white; border-radius: 8px; margin-bottom: 8px;">
+                <span>✨ Золотая рамка</span>
+                <button onclick="disableUpgrade('goldBorder')" style="background: #ee5253; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">Отключить</button>
+            </div>
+            {% endif %}
+            {% if profile_user.has_verified %}
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px; background: white; border-radius: 8px;">
+                <span>✓ Верифицирован</span>
+                <button onclick="disableUpgrade('verified')" style="background: #ee5253; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">Отключить</button>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+        {% endif %}
+
+        <!-- Посты пользователя в сетке -->
+        <div class="posts-grid">
+            {% for post in posts %}
+            <div class="grid-item" onclick="openPost('{{ post.id }}')">
+                {% if post.image %}
+                <img src="{{ post.image.url }}" alt="Post image" class="grid-img">
+                {% else %}
+                <div class="grid-text">
+                    <span>{{ post.caption|truncatechars:50 }}</span>
+                </div>
+                {% endif %}
+            </div>
+            {% empty %}
+            <div class="no-posts">
+                <p>Нет публикаций.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+{% if is_owner %}
+<div class="settings-overlay" id="overlay" onclick="toggleSettings(false)" 
+     style="position: absolute; display: block; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0); z-index: 1000; transition: background 0.3s ease; visibility: hidden;">
+</div>
+
+<div class="settings-drawer" id="drawer" 
+     style="position: absolute; right: -100%; top: 0; width: 85%; height: 100%; 
+            background: #ffffff; z-index: 1001; transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
+            padding: 25px 20px; box-shadow: -10px 0 30px rgba(0,0,0,0.1);
+            border-top-left-radius: 24px; border-bottom-left-radius: 24px; visibility: hidden;">
+    
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+        <h3 style="margin: 0; font-size: 20px; color: #1e293b; font-weight: 700;">Настройки</h3> 
+        <div onclick="toggleSettings(false)" style="cursor: pointer; background: #f1f5f9; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; color: #64748b;">✕</div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+        <a href="#" class="drawer-item">
+            <span class="icon">👤</span> Редактировать профиль
+        </a>
+        <a href="#" id="theme-toggle-item" class="drawer-item">
+            <span class="icon">🎨</span> Тема оформления
+        </a>
+        <a href="{% url 'reports' %}" class="drawer-item">
+            <span class="icon">📊</span> Отчеттар
+        </a>
+        
+        <div style="height: 1px; background: #f1f5f9; margin: 15px 0;"></div>
+        
+        <a href="{% url 'logout' %}" class="drawer-item logout">
+            <span class="icon">🚪</span> Выйти из аккаунта
+        </a>
+    </div>
+</div>
+{% endif %}
+
+<script>
+    function toggleSettings(show) {
+        const d = document.getElementById('drawer');
+        const o = document.getElementById('overlay');
+        
+        if (show) {
+            // Сначала делаем видимыми, потом запускаем анимацию
+            d.style.visibility = 'visible';
+            o.style.visibility = 'visible';
+            
+            // Небольшая задержка, чтобы transition сработал корректно
+            setTimeout(() => {
+                d.style.right = '0';
+                o.style.background = 'rgba(0,0,0,0.5)';
+            }, 10);
+        } else {
+            // Убираем анимацией
+            d.style.right = '-100%';
+            o.style.background = 'rgba(0,0,0,0)';
+            
+            // После завершения анимации (400мс) скрываем полностью
+            setTimeout(() => {
+                d.style.visibility = 'hidden';
+                o.style.visibility = 'hidden';
+            }, 400);
+        }
+    }
+
+    function toggleAvatarMenu() {
+        const m = document.getElementById('avatarMenu');
+        if (m) {
+            m.style.display = m.style.display === 'block' ? 'none' : 'block';
+        }
+    }
+
+    function togglePostOptions(postId) {
+        const current = document.getElementById('post-options-' + postId);
+        if (!current) return;
+
+        document.querySelectorAll('.post-options').forEach(el => {
+            if (el !== current) el.classList.remove('show');
+        });
+
+        current.classList.toggle('show');
+    }
+
+    function notify(message) {
+        showToast(message);
+    }
+
+    function showToast(message) {
+        const toast = document.getElementById('global-toast');
+        if (toast) {
+            toast.textContent = message;
+            toast.classList.add('visible');
+            setTimeout(() => toast.classList.remove('visible'), 1800);
+        } else {
+            alert(message);
+        }
+    }
+
+    function openPost(postId) {
+        window.location.href = '/post/' + postId + '/';
+    }
+
+    function copyLink(postId) {
+        const url = window.location.origin + '/post/' + postId + '/';
+        navigator.clipboard.writeText(url).then(() => {
+            showToast('Ссылка скопирована!');
+        }).catch(() => {
+            showToast('Не удалось скопировать ссылку');
+        });
+    }
+
+    function hidePost(postId) {
+        fetch('/post/' + postId + '/hide/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.getElementById('csrfToken').value,
+                'Content-Type': 'application/json'
+            }
+        }).then(response => response.json()).then(data => {
+            if (data.success) {
+                document.getElementById('post-' + postId).remove();
+                showToast(data.message);
+            } else {
+                showToast(data.message);
+            }
+        });
+    }
+
+    function deletePost(postId) {
+        if(confirm('Удалить этот пост?')) {
+            fetch('/post/' + postId + '/delete/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.getElementById('csrfToken').value,
+                    'Content-Type': 'application/json'
+                }
+            }).then(response => response.json()).then(data => {
+                if (data.success) {
+                    document.getElementById('post-' + postId).remove();
+                    showToast(data.message);
+                } else {
+                    showToast(data.message);
+                }
+            });
+        }
+    }
+
+    function savePost(postId) {
+        fetch('/post/' + postId + '/save/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.getElementById('csrfToken').value,
+                'Content-Type': 'application/json'
+            }
+        }).then(response => response.json()).then(data => {
+            showToast(data.message);
+        });
+    }
+
+    function reportPost(postId) {
+        const reason = prompt('Почему вы хотите пожаловаться на этот пост?', 'Неприемлемый контент');
+        if (reason) {
+            const formData = new FormData();
+            formData.append('reason', reason);
+            fetch('/post/' + postId + '/report/', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': document.getElementById('csrfToken').value
+                }
+            }).then(response => response.json()).then(data => {
+                showToast(data.message);
+            });
+        }
+    }
+
+    function deletePhoto() {
+        if (confirm("Вы уверены, что хотите удалить фото профиля?")) {
+            const clearCheckbox = document.getElementById('id_profile_picture-clear');
+            const form = document.getElementById('avatarForm');
+            if (clearCheckbox && form) {
+                clearCheckbox.checked = true;
+                form.submit();
+            }
+        }
+    }
+
+    function disableUpgrade(upgradeType) {
+        if (confirm("Вы уверены, что хотите отключить это улучшение?")) {
+            const formData = new FormData();
+            formData.append('upgrade_type', upgradeType);
+            
+            fetch('{% url "disable_upgrade" %}', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': document.getElementById('csrfToken').value
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast(data.message);
+                    location.reload();
+                } else {
+                    showToast('Ошибка: ' + data.message);
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+    }
+
+    function toggleFollow(username) {
+        const formData = new FormData();
+        fetch(`/follow/${username}/`, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': document.getElementById('csrfToken').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const btn = document.getElementById('followBtn');
+                const followersCount = document.querySelector('#followersCount');
+                const followingCount = document.querySelector('#followingCount');
+
+                if (btn) {
+                    btn.textContent = data.action === 'follow' ? 'Отписаться' : 'Подписаться';
+                }
+                if (followersCount) {
+                    followersCount.textContent = data.followers_count;
+                }
+                if (followingCount) {
+                    followingCount.textContent = data.following_count;
+                }
+            } else {
+                showToast('Ошибка: ' + data.message);
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            showToast('Серверная ошибка');
+        });
+    }
+
+    // Закрытие меню аватара и пост-меню при клике вне
+    window.addEventListener('click', function(event) {
+        const menu = document.getElementById('avatarMenu');
+        const btn = document.querySelector('.edit-avatar-btn');
+        if (menu && btn && !btn.contains(event.target) && !menu.contains(event.target)) {
+            menu.style.display = 'none';
+        }
+
+        document.querySelectorAll('.post-options').forEach(el => {
+            if (!el.contains(event.target) && !el.previousElementSibling?.contains(event.target)) {
+                el.classList.remove('show');
+            }
+        });
+    });
+
+    // Event listeners для кнопок постов
+    document.addEventListener('click', function(event) {
+        if (event.target.classList.contains('post-save-btn')) {
+            const postId = event.target.getAttribute('data-postid');
+            savePost(postId);
+        } else if (event.target.classList.contains('post-hide-btn')) {
+            const postId = event.target.getAttribute('data-postid');
+            hidePost(postId);
+        } else if (event.target.classList.contains('post-report-btn')) {
+            const postId = event.target.getAttribute('data-postid');
+            reportPost(postId);
+        } else if (event.target.classList.contains('post-delete-btn')) {
+            const postId = event.target.getAttribute('data-postid');
+            deletePost(postId);
+        } else if (event.target.classList.contains('post-copy-btn')) {
+            const postId = event.target.getAttribute('data-postid');
+            copyLink(postId);
+        }
+    });
+
+    if (!window.setTheme) {
+        window.setTheme = function(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('theme', theme);
+        };
+    }
+
+    if (!window.toggleTheme) {
+        window.toggleTheme = function() {
+            const current = document.documentElement.getAttribute('data-theme') || 'light';
+            window.setTheme(current === 'dark' ? 'light' : 'dark');
+        };
+    }
+
+    if (!window.loadTheme) {
+        window.loadTheme = function() {
+            const savedTheme = localStorage.getItem('theme');
+            const defaultTheme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            window.setTheme(savedTheme || defaultTheme);
+        };
+        window.addEventListener('DOMContentLoaded', window.loadTheme);
+    }
+</script>
+{% endblock %}
