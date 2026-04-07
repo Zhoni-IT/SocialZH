@@ -2,12 +2,9 @@
 import os
 import sys
 
-# Добавляем путь к проекту в sys.path
-sys.path.insert(0, '/home/k/keeperyd/keeperyd.beget.tech/SocialZH/')  # Замени на свой путь
+sys.path.insert(0, '/home/k/keeperyd/keeperyd.beget.tech/SocialZH/')
+sys.path.insert(1, '/home/k/keeperyd/.local/lib/python3.10/site-packages')
+os.environ['DJANGO_SETTINGS_MODULE'] = 'SocialZH.settings'
 
-# Устанавливаем настройки Django
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'SocialZH.settings')
-
-# Получаем WSGI-приложение
 from django.core.wsgi import get_wsgi_application
 application = get_wsgi_application()
