@@ -3,7 +3,7 @@ import os
 import sys
 
 # Добавляем путь к проекту в sys.path
-sys.path.insert(0, '/home/keeperyd/keeperyd.beget.tech')  # Замени на свой путь
+sys.path.insert(0, '/home/k/keeperyd/keeperyd.beget.tech/SocialZH/')  # Замени на свой путь
 
 # Устанавливаем настройки Django
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'SocialZH.settings')
