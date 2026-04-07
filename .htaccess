@@ -1,3 +1,3 @@
 PassengerEnabled on
-PassengerAppRoot /home/a/akyldyti/akyldyti.beget.tech  # Замени на свой путь
-PassengerPython /home/a/akyldyti/venv_project/bin/python  # Замени на путь к виртуальному окружению
+PassengerAppRoot /home/keeperyd/keeperyd.beget.tech  # Замени на свой путь
+PassengerPython /home/keeperyd/venv_project/bin/python  # Замени на путь к виртуальному окружению
